@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.delay
 import android.content.Intent
+import androidx.compose.material3.Button
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -31,8 +35,8 @@ class MainActivity : ComponentActivity() {
 
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
-        val intent = Intent(this, ClipboardAccessibilityService::class.java)
-        startForegroundService(intent)
+//        val intent = Intent(this, ClipboardAccessibilityService::class.java)
+//        startForegroundService(intent)
 
         setContent {
             MyApplicationTheme {
@@ -51,6 +55,27 @@ fun ClipboardScreen(clipboardManager: ClipboardManager) {
     val context = LocalContext.current
     var clipboardText by remember { mutableStateOf(getClipboardText(clipboardManager, context)) }
     var connectionResult by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    Button(onClick = {
+        // запускаємо мережевий виклик в фоновій корутині
+        scope.launch(Dispatchers.IO) {
+            try {
+                val client = ClipboardSyncClient(host = "192.168.1.108", port = 7777)
+                val response = client.sendMessage("Привіт з телефону")
+                connectionResult = "Відповідь: $response"
+            } catch (e: Exception) {
+                connectionResult = "Помилка: ${e.message}"
+            }
+        }
+    }) {
+        Text("Тест з'єднання")
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(text = connectionResult)
 
     // цикл опитування - кожну секунду перевіряє буфер і оновлює стан
     LaunchedEffect(Unit) {
